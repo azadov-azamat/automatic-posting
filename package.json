@@ -1,0 +1,19 @@
+{
+  "name": "automtic-posting",
+  "version": "1.0.0",
+  "description": "Automatic posting to olx.uz",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/azadov-azamat/automatic-posting.git"
+  },
+  "author": "azadov-azamat",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/azadov-azamat/automatic-posting/issues"
+  },
+  "homepage": "https://github.com/azadov-azamat/automatic-posting#readme"
+}
