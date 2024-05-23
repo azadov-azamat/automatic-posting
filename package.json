@@ -4,6 +4,7 @@
   "description": "Automatic posting to olx.uz",
   "main": "index.js",
   "scripts": {
+    "start": "node index.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
@@ -15,5 +16,9 @@
   "bugs": {
     "url": "https://github.com/azadov-azamat/automatic-posting/issues"
   },
-  "homepage": "https://github.com/azadov-azamat/automatic-posting#readme"
+  "homepage": "https://github.com/azadov-azamat/automatic-posting#readme",
+  "dependencies": {
+    "puppeteer": "^22.9.0",
+    "request": "^2.88.2"
+  }
 }
