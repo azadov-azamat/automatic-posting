@@ -22,17 +22,31 @@ function delay(time) {
 }
 
 async function selectDropdownByIndex(page, dataCyValue, index) {
+    try {
+        // Dropdown tugmachasini bosish
+        await page.click(`div[data-cy="${dataCyValue}"] button[data-testid="dropdown-expand-button"]`);
 
-    await page.click(`div[data-cy="${dataCyValue}"] button[data-testid="dropdown-head-button"]`);
+        try {
+            await page.waitForSelector(`div[data-cy="${dataCyValue}"] ul[data-testid="dropdown-list"]`, { timeout: 10000 });
+        } catch (error) {
+            throw new Error(`Dropdown ro'yxati yuklanmadi: ${error.message}`);
+        }
 
-    await page.waitForSelector(`div[data-cy="${dataCyValue}"] ul[data-testid="dropdown-list"]`, {timeout: 40000});
+        // Dropdown ro'yxatini kutish
+        // await page.waitForSelector(`div[data-cy="${dataCyValue}"] ul[data-testid="dropdown-list"]`, { timeout: 10000 });
 
-    const dropdownItems = await page.$$(`div[data-cy="${dataCyValue}"] ul[data-testid="dropdown-list"] li`);
+        // Dropdown elementlarini olish
+        const dropdownItems = await page.$$(`div[data-cy="${dataCyValue}"] ul[data-testid="dropdown-list"] li`);
+        console.log("dropdownItems", dropdownItems);
 
-    if (dropdownItems.length > index) {
-        await dropdownItems[index].click(); // Indeksga mos keladigan itemni tanlash
-    } else {
-        throw new Error(`${dataCyValue} index out of bounds`);
+        if (dropdownItems.length > index) {
+            // Indeksga mos keladigan itemni tanlash
+            await dropdownItems[index].click();
+        } else {
+            console.error(`${dataCyValue} uchun indeksdan tashqarida: ${index}`);
+        }
+    } catch (error) {
+        console.error(`Dropdownni tanlashda xatolik: ${error.message}`);
     }
 }
 
@@ -108,6 +122,8 @@ async function loginOlx(phoneNumber, password, form) {
         wc,
         isFurnished,
         ceilingHeight,
+        hasApartmentArray,
+        hasNearbyArray,
         repairs,
         isCommission,
         automaticNoticePeriod,
@@ -146,15 +162,15 @@ async function loginOlx(phoneNumber, password, form) {
     }
 
     // Rasmlar yuklash ishladi
-    // for (let i = 0; i < imageLinks.length; i++) {
-    //     const imagePath = path.resolve(__dirname, `image${i}.jpg`);
-    //     await downloadImage(imageLinks[i], imagePath);
-    //     const [fileChooser] = await Promise.all([
-    //         page.waitForFileChooser(),
-    //         page.click('label[data-testid="attach-photos"]'), // Fayl tanlash tugmasini bosish
-    //     ]);
-    //     await fileChooser.accept([imagePath]);
-    // }
+    for (let i = 0; i < imageLinks.length; i++) {
+        const imagePath = path.resolve(__dirname, `image${i}.jpg`);
+        await downloadImage(imageLinks[i], imagePath);
+        const [fileChooser] = await Promise.all([
+            page.waitForFileChooser(),
+            page.click('input[data-cy="attach-photos-input"]'),
+        ]);
+        await fileChooser.accept([imagePath]);
+    }
 
     // Izoh yozish
     await page.type('textarea[name="description"]', description)
@@ -184,7 +200,7 @@ async function loginOlx(phoneNumber, password, form) {
         await selectOption(page, 'parameters.type_of_market_primary'); // Primary turini tanlash
     }
 
-    await delay(2000);
+    // await delay(2000);
 
     let numberOfRooms = await page.$('input[data-cy="parameters.number_of_rooms"]');
     if (numberOfRooms) {
@@ -254,15 +270,42 @@ async function loginOlx(phoneNumber, password, form) {
         await pageCeilingHeight.type(ceilingHeight.toString());
     }
 
+    await page.evaluate((hasApartmentArray, hasNearbyArray) => {
+        const allCheckboxes = document.querySelectorAll('div[role="checkbox"]');
+
+        const firstArrayEndIndex = 8; // Haqiqiy checkboxlar soniga qarab moslang
+
+        const firstGroupsCheckboxes = Array.from(allCheckboxes).slice(0, firstArrayEndIndex);
+        const secondGroupsCheckboxes = Array.from(allCheckboxes).slice(firstArrayEndIndex);
+
+        hasApartmentArray.forEach((index) => {
+            if (index < firstGroupsCheckboxes.length) {
+                const checkbox = firstGroupsCheckboxes[index];
+                if (checkbox.getAttribute('aria-checked') === 'false') {
+                    checkbox.click();  // Checkboxni vizual tarzda belgilash uchun click simulyatsiya qilish
+                }
+            }
+        });
+
+        hasNearbyArray.forEach((index) => {
+            if (index < secondGroupsCheckboxes.length) {
+                const checkbox = secondGroupsCheckboxes[index];
+                if (checkbox.getAttribute('aria-checked') === 'false') {
+                    checkbox.click();  // Checkboxni vizual tarzda belgilash uchun click simulyatsiya qilish
+                }
+            }
+        });
+    }, hasApartmentArray, hasNearbyArray);
+
     let pageRepairs = await page.$('div[data-cy="parameters.repairs"]')
     if (pageRepairs && repairs) {
         await selectDropdownByIndex(page, 'parameters.repairs', repairs)
     }
 
     if (isCommission) {
-        await selectOption(page, 'parameters.comission_yes_unactive'); // Furnished turini tanlash
+        await selectOption(page, 'parameters.comission_yes'); // Furnished turini tanlash
     } else {
-        await selectOption(page, 'parameters.comission_no_unactive'); // Not furnished turini tanlash
+        await selectOption(page, 'parameters.comission_no'); // Not furnished turini tanlash
     }
 
     // Toggle ni boshqarish
@@ -330,14 +373,16 @@ loginOlx('996802208', '1taQanjiqatirgul', {
     floor: 3,
     totalFloor: 5,
     houseType: 1,
-    wc: 1,
+    wc: 0,
     layout: 2,
-    // yearConstruction: 0,
+    yearConstruction: 1,
     isFurnished: true,
     ceilingHeight: 3,
+    hasApartmentArray : [0, 2, 4],
+    hasNearbyArray: [1, 3, 5],
     isCommission: false,
     repairs: 2,
-    automaticNoticePeriod: false,
+    automaticNoticePeriod: true,
     locationText: "chilonzor",
     person: 'Azamat'
 });
